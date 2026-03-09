@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chernobyl — TMDB Explorer</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="style/style.css" />
+</head>
+<body>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     LOADER — pantalla de carga inicial
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="loader">
+  <div class="loader-symbol"></div>
+  <div class="loader-text">Conectando con TMDB · Chernobyl</div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     LIGHTBOX — visor de imágenes a pantalla completa
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="lightbox">
+  <button id="lightbox-close">✕</button>
+  <img id="lightbox-img" src="" alt="Imagen ampliada" />
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     MODAL DE PERSONA — detalle de actor / crew
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="person-modal">
+  <div class="person-panel">
+    <button class="modal-close" id="modal-close-btn">✕</button>
+    <div class="pm-top">
+      <img id="pm-img" src="" alt="Foto de perfil" />
+      <div class="pm-header-info">
+        <div class="person-name"  id="pm-name"></div>
+        <div class="person-known" id="pm-known"></div>
+        <div class="pm-stats-grid">
+          <div class="pm-stat"><span class="pm-stat-icon">🎂</span><span id="pm-birthday">—</span></div>
+          <div class="pm-stat"><span class="pm-stat-icon">📍</span><span id="pm-place">—</span></div>
+          <div class="pm-stat"><span class="pm-stat-icon">⭐</span><span id="pm-pop">—</span></div>
+          <div class="pm-stat"><span class="pm-stat-icon">🎬</span><span id="pm-gender">—</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="pm-section-label">Biografía</div>
+    <div class="person-bio" id="pm-bio"></div>
+    <div class="pm-section-label" id="pm-known-label">Conocido por</div>
+    <div class="pm-known-scroll" id="pm-known-for"></div>
+  </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     APP — contenedor principal
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="app">
+
+  <!-- ── Header ─────────────────────────────── -->
+  <header class="site-header">
+    <div class="site-logo">
+      <div class="logo-dot"></div>
+      <span class="logo-label">Chernobyl · TMDB Explorer</span>
+    </div>
+    <div class="api-badge">
+      <span class="badge-dot"></span>
+      API Conectada · TMDB v3
+    </div>
+  </header>
+
+  <!-- ── Menú principal (Req. 1 del ejercicio) ─ -->
+  <nav class="nav-menu" id="nav-menu">
+    <button class="nav-btn active" data-section="overview"  >🏠 Inicio</button>
+    <button class="nav-btn"        data-section="episodes"  >📺 Episodios</button>
+    <button class="nav-btn"        data-section="cast"      >👥 Reparto</button>
+    <button class="nav-btn"        data-section="gallery"   >🖼 Galería</button>
+    <button class="nav-btn"        data-section="videos"    >▶ Videos</button>
+    <button class="nav-btn"        data-section="reviews"   >💬 Reseñas</button>
+    <button class="nav-btn"        data-section="similar"   >🔍 Similares</button>
+    <button class="nav-btn"        data-section="keywords"  >🏷 Keywords</button>
+  </nav>
+
+  <!-- ── Bento Grid ─────────────────────────── -->
+  <div class="bento-grid" id="bento-grid">
+
+    <!-- ══════════════════════════════════════
+         SECCIÓN: OVERVIEW
+         Endpoint 1: GET /tv/{id}
+    ══════════════════════════════════════ -->
+    <div class="section active" id="sec-overview">
+
+      <!-- Hero con backdrop -->
+      <div class="bento-card hero-card col-8" id="hero-card">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+          <div class="hero-tag">Serie · HBO · 2019</div>
+          <div class="hero-title" id="hero-title">Chernobyl</div>
+          <div class="hero-meta" id="hero-meta">
+            <div class="hero-meta-item"><span class="dot">·</span> Cargando…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Anillo de puntuación -->
+      <div class="bento-card score-card col-4">
+        <div class="card-label">Puntuación</div>
+        <div class="score-ring">
+          <svg width="120" height="120" viewBox="0 0 120 120">
+            <circle class="bg" cx="60" cy="60" r="54"/>
+            <circle class="fg" id="score-circle" cx="60" cy="60" r="54"/>
+          </svg>
+          <div class="score-number" id="score-number">—</div>
+        </div>
+        <div class="score-label">Valoración de Usuarios</div>
+        <div class="vote-count" id="vote-count"></div>
+      </div>
+
+      <!-- Mini stats dashboard -->
+      <div class="bento-card col-3">
+        <div class="card-label">Dashboard</div>
+        <div class="mini-stats-wrap">
+          <div class="mini-stat">
+            <div class="mini-stat-icon accent-green">📺</div>
+            <div>
+              <div class="mini-stat-val" id="stat-eps">—</div>
+              <div class="mini-stat-key">Episodios</div>
+            </div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-icon accent-orange">📅</div>
+            <div>
+              <div class="mini-stat-val" id="stat-year">—</div>
+              <div class="mini-stat-key">Año estreno</div>
+            </div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-icon accent-blue">🔥</div>
+            <div>
+              <div class="mini-stat-val" id="stat-pop">—</div>
+              <div class="mini-stat-key">Popularidad</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sinopsis -->
+      <div class="bento-card col-9">
+        <div class="card-label">Sinopsis</div>
+        <p class="overview-text" id="overview-text">Cargando sinopsis…</p>
+        <div class="genre-tags" id="genre-tags"></div>
+      </div>
+
+      <!-- Estadísticas generales -->
+      <div class="bento-card col-12">
+        <div class="card-label">Estadísticas Generales</div>
+        <div class="stats-row">
+          <div class="stat-pill">
+            <div class="stat-val" id="s-seasons">—</div>
+            <div class="stat-key">Temporadas</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-val" id="s-eps2">—</div>
+            <div class="stat-key">Episodios</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-val" id="s-lang">—</div>
+            <div class="stat-key">Idioma orig.</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-val" id="s-air">—</div>
+            <div class="stat-key">Primer aire</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-val" id="s-status">—</div>
+            <div class="stat-key">Estado</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-val" id="s-net">—</div>
+            <div class="stat-key">Cadena</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- ── FIN OVERVIEW ─────────────────────── -->
+
+
+    <!-- ══════════════════════════════════════
+         SECCIÓN: EPISODIOS
+         Endpoint 3: GET /tv/{id}/season/1
+    ══════════════════════════════════════ -->
+    <div class="section" id="sec-episodes">
+
+      <div class="bento-card col-8">
+        <div class="card-label">Episodios — Temporada 1</div>
+        <div class="episodes-list" id="episodes-list">
+          <div class="empty-state">Cargando episodios…</div>
+        </div>
+      </div>
+
+      <div class="bento-card col-4">
+        <div class="card-label">Valoración por Episodio</div>
+        <div class="chart-bar-wrap" id="ep-chart"></div>
+      </div>
+
+    </div>
+    <!-- ── FIN EPISODIOS ────────────────────── -->
+
+
+    <!-- ══════════════════════════════════════
+         SECCIÓN: REPARTO
+         Endpoint 2: GET /tv/{id}/credits
+    ══════════════════════════════════════ -->
+    <div class="section" id="sec-cast">
+
+      <div class="bento-card col-12">
+        <div class="card-label">Reparto Principal</div>
+        <div class="cast-scroll" id="cast-list">
+          <div class="empty-state">Cargando reparto…</div>
+        </div>
+      </div>
+
+      <div class="bento-card col-6">
+        <div class="card-label">Equipo Técnico</div>
+        <div class="cast-scroll" id="crew-list"></div>
+      </div>
+
+      <div class="bento-card col-6">
+        <div class="card-label">Estadísticas de Reparto</div>
+        <div class="stats-row">
+          <div class="stat-pill">
+            <div class="stat-val" id="c-cast">—</div>
+            <div class="stat-key">Actores</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-val" id="c-crew">—</div>
+            <div class="stat-key">Equipo técnico</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- ── FIN REPARTO ──────────────────────── -->
+
+
+    <!-- ══════════════════════════════════════
+         SECCIÓN: GALERÍA
+         Endpoint 4: GET /tv/{id}/images
+    ══════════════════════════════════════ -->
+    <div class="section" id="sec-gallery">
+
+      <div class="bento-card col-12">
+        <div class="card-label">Imágenes — Backdrops</div>
+        <div class="gallery-grid" id="backdrops-grid">
+          <div class="empty-state">Cargando galería…</div>
+        </div>
+      </div>
+
+      <div class="bento-card col-12">
+        <div class="card-label">Posters Oficiales</div>
+        <div class="posters-scroll" id="posters-scroll">
+          <div class="empty-state">Cargando posters…</div>
+        </div>
+      </div>
+
+    </div>
+    <!-- ── FIN GALERÍA ──────────────────────── -->
+
+
+    <!-- ══════════════════════════════════════
+         SECCIÓN: VIDEOS
+         Endpoint 5: GET /tv/{id}/videos
+    ══════════════════════════════════════ -->
+    <div class="section" id="sec-videos">
+
+      <div class="bento-card col-12">
+        <div class="card-label">Videos · Tráilers y Featurettes</div>
+        <div class="video-scroll" id="video-list">
+          <div class="empty-state">Cargando videos…</div>
+        </div>
+      </div>
+
+    </div>
+    <!-- ── FIN VIDEOS ───────────────────────── -->
+
+
+    <!-- ══════════════════════════════════════
+         SECCIÓN: RESEÑAS
+         Endpoint 6: GET /tv/{id}/reviews
+    ══════════════════════════════════════ -->
+    <div class="section" id="sec-reviews">
+
+      <div class="bento-card col-7">
+        <div class="card-label">Reseñas de Usuarios</div>
+        <div class="reviews-list" id="reviews-list">
+          <div class="empty-state">Cargando reseñas…</div>
+        </div>
+      </div>
+
+      <div class="bento-card col-5">
+        <div class="card-label">Resumen de Valoraciones</div>
+        <div class="stat-pill" style="margin-bottom:16px;">
+          <div class="stat-val" id="rev-total">—</div>
+          <div class="stat-key">Reseñas totales</div>
+        </div>
+        <div id="rev-dist" class="chart-bar-wrap"></div>
+      </div>
+
+    </div>
+    <!-- ── FIN RESEÑAS ──────────────────────── -->
+
+
+    <!-- ══════════════════════════════════════
+         SECCIÓN: SIMILARES
+         Endpoint 7: GET /tv/{id}/similar
+    ══════════════════════════════════════ -->
+    <div class="section" id="sec-similar">
+
+      <div class="bento-card col-12">
+        <div class="card-label">Series Similares · También te podría gustar</div>
+        <div class="similar-scroll" id="similar-list">
+          <div class="empty-state">Cargando similares…</div>
+        </div>
+      </div>
+
+    </div>
+    <!-- ── FIN SIMILARES ───────────────────── -->
+
+
+    <!-- ══════════════════════════════════════
+         SECCIÓN: KEYWORDS
+         Endpoint 8: GET /tv/{id}/keywords
+         Endpoint 9: GET /genre/tv/list
+    ══════════════════════════════════════ -->
+    <div class="section" id="sec-keywords">
+
+      <div class="bento-card col-7">
+        <div class="card-label">Palabras Clave</div>
+        <div class="keywords-wrap" id="keywords-wrap">
+          <div class="empty-state">Cargando palabras clave…</div>
+        </div>
+      </div>
+
+      <div class="bento-card col-5">
+        <div class="card-label">Géneros de TV disponibles en TMDB</div>
+        <div class="keywords-wrap" id="genres-wrap">
+          <div class="empty-state">Cargando géneros…</div>
+        </div>
+      </div>
+
+    </div>
+    <!-- ── FIN KEYWORDS ─────────────────────── -->
+
+  </div><!-- /.bento-grid -->
+</div><!-- /#app -->
+
+<!-- Script principal -->
+<script src="js/script.js"></script>
+
+</body>
+</html>
