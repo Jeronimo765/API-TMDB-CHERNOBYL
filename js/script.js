@@ -444,3 +444,16 @@ loadSeriesDetails()
       '</div>' +
       '</div>';
   });
+
+// ─── PWA: Service Worker ─────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(function (reg) {
+        console.log('SW registrado', reg.scope);
+      })
+      .catch(function (err) {
+        console.log('Error SW', err);
+      });
+  });
+}
