@@ -1,5 +1,7 @@
-const STATIC_CACHE = 'chernobyl-static-v2';
-const RUNTIME_CACHE = 'chernobyl-runtime-v2';
+// Cache estatico con los archivos minimos para instalar y abrir el PWA.
+const STATIC_CACHE = 'chernobyl-static-v5';
+// Cache dinamico para recursos reutilizables que se cargan durante el uso.
+const RUNTIME_CACHE = 'chernobyl-runtime-v5';
 const APP_SHELL = [
   './',
   './index.html',
@@ -7,12 +9,13 @@ const APP_SHELL = [
   './offline.html',
   './style/style.css',
   './js/script.js',
-  './icons/icon-192.svg',
-  './icons/icon-512.svg',
-  './icons/icon-maskable.svg'
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './icons/icon-maskable.png'
 ];
 
 self.addEventListener('install', function (event) {
+  // Precarga el shell base y la pagina offline.
   event.waitUntil(
     caches.open(STATIC_CACHE).then(function (cache) {
       return cache.addAll(APP_SHELL);
@@ -22,6 +25,7 @@ self.addEventListener('install', function (event) {
 });
 
 self.addEventListener('activate', function (event) {
+  // Limpia caches viejos y toma control inmediato del sitio.
   event.waitUntil(
     caches.keys().then(function (keys) {
       return Promise.all(
@@ -47,31 +51,24 @@ self.addEventListener('fetch', function (event) {
   var isNavigation = event.request.mode === 'navigate';
 
   if (isNavigation) {
+    // Para navegaciones intentamos red; si falla, mostramos siempre offline.html.
     event.respondWith(
       fetch(event.request)
         .then(function (response) {
-          var copy = response.clone();
-          caches.open(RUNTIME_CACHE).then(function (cache) {
-            cache.put('./index.html', copy);
-          });
           return response;
         })
         .catch(function () {
-          return caches.match(event.request)
-            .then(function (cachedPage) {
-              return cachedPage || caches.match('./index.html') || caches.match('./offline.html');
-            });
+          return caches.match('./offline.html');
         })
     );
     return;
   }
 
   if (isSameOrigin) {
+    // Para recursos propios usamos red primero para evitar archivos viejos en desarrollo.
     event.respondWith(
-      caches.match(event.request).then(function (cachedResponse) {
-        if (cachedResponse) return cachedResponse;
-
-        return fetch(event.request).then(function (networkResponse) {
+      fetch(event.request)
+        .then(function (networkResponse) {
           if (!networkResponse || networkResponse.status !== 200) {
             return networkResponse;
           }
@@ -82,8 +79,10 @@ self.addEventListener('fetch', function (event) {
           });
 
           return networkResponse;
-        });
-      })
+        })
+        .catch(function () {
+          return caches.match(event.request);
+        })
     );
     return;
   }
@@ -93,6 +92,7 @@ self.addEventListener('fetch', function (event) {
     url.hostname === 'fonts.googleapis.com' ||
     url.hostname === 'fonts.gstatic.com'
   ) {
+    // Las fuentes e imagenes externas se reutilizan desde cache cuando ya existen.
     event.respondWith(
       caches.match(event.request).then(function (cachedResponse) {
         var networkFetch = fetch(event.request).then(function (networkResponse) {

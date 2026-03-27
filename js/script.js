@@ -17,6 +17,7 @@ var IMG_BASE = 'https://image.tmdb.org/t/p/';
 var LANG = 'es-ES';
 var cache = {};
 var loaded = {};
+var wasOffline = !navigator.onLine;
 
 /* ─── fetchTMDB ─────────────────────────────────────────────
    Función central que hace todas las peticiones a la API.
@@ -401,6 +402,40 @@ function openLightbox(src) {
 function closeLightbox() {
   document.getElementById('lightbox').classList.remove('open');
 }
+function updateConnectionBanner() {
+  var banner = document.getElementById('connection-banner');
+  if (!banner) return;
+
+  if (navigator.onLine) {
+    if (!wasOffline) {
+      banner.hidden = true;
+      banner.className = 'connection-banner';
+      return;
+    }
+
+    banner.innerHTML =
+      '<em>En linea</em>' +
+      '<strong>Conexion restablecida</strong>' +
+      '<span>La app ya puede consultar TMDB y cargar informacion en tiempo real.</span>';
+    banner.className = 'connection-banner is-online';
+    banner.hidden = false;
+    wasOffline = false;
+    clearTimeout(updateConnectionBanner.timer);
+    updateConnectionBanner.timer = setTimeout(function () {
+      banner.hidden = true;
+    }, 2200);
+    return;
+  }
+
+  clearTimeout(updateConnectionBanner.timer);
+  banner.innerHTML =
+    '<em>Sin internet</em>' +
+    '<strong>Modo offline</strong>' +
+    '<span>No hay conexion. La app no puede cargar datos nuevos hasta que vuelva internet.</span>';
+  banner.className = 'connection-banner is-offline';
+  banner.hidden = false;
+  wasOffline = true;
+}
 
 /* ─── Eventos ───────────────────────────────────────────────── */
 document.getElementById('lightbox-close').onclick = closeLightbox;
@@ -418,6 +453,8 @@ document.getElementById('nav-menu').onclick = function (e) {
   var btn = e.target.closest('.nav-btn');
   if (btn && btn.dataset.section) showSection(btn.dataset.section);
 };
+window.addEventListener('online', updateConnectionBanner);
+window.addEventListener('offline', updateConnectionBanner);
 
 /* ─── INIT ──────────────────────────────────────────────────────
    Punto de entrada. Carga los datos del Endpoint 1 y
@@ -430,6 +467,7 @@ loadSeriesDetails()
     setTimeout(function () {
       document.getElementById('app').classList.add('visible');
     }, 200);
+    updateConnectionBanner();
   })
   .catch(function (err) {
     document.getElementById('loader').innerHTML =
@@ -446,6 +484,7 @@ loadSeriesDetails()
   });
 
 // ─── PWA: Service Worker ─────────────────────────────
+// Registra el service worker para habilitar instalacion y fallback offline.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('./service-worker.js')
