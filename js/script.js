@@ -17,6 +17,7 @@ var IMG_BASE = 'https://image.tmdb.org/t/p/';
 var LANG = 'es-ES';
 var cache = {};
 var loaded = {};
+var connectionState = navigator.onLine ? 'online' : 'offline';
 var wasOffline = !navigator.onLine;
 
 /* ─── fetchTMDB ─────────────────────────────────────────────
@@ -31,9 +32,19 @@ async function fetchTMDB(endpoint, extra) {
   Object.keys(extra).forEach(function (k) { url.searchParams.set(k, extra[k]); });
 
   var key = url.toString();
+  if (!navigator.onLine) {
+    updateConnectionBanner('offline');
+    throw new Error('Sin conexion a internet');
+  }
   if (cache[key]) return cache[key];
 
-  var res = await fetch(key);
+  var res;
+  try {
+    res = await fetch(key);
+  } catch (err) {
+    updateConnectionBanner('offline');
+    throw new Error('Sin conexion a internet');
+  }
 
   if (!res.ok) {
     if (res.status === 401) throw new Error('API Key invalida (401)');
@@ -43,6 +54,9 @@ async function fetchTMDB(endpoint, extra) {
   }
 
   var data = await res.json();
+  if (connectionState !== 'online' || wasOffline) {
+    updateConnectionBanner('online');
+  }
   cache[key] = data;
   return data;
 }
@@ -59,14 +73,26 @@ function showSection(name) {
   if (sec) sec.classList.add('active');
   var btn = document.querySelector('[data-section="' + name + '"]');
   if (btn) btn.classList.add('active');
+  if (btn && typeof btn.scrollIntoView === 'function') {
+    btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }
 
   if (!loaded[name]) {
+    var loader = null;
+    if (name === 'episodes') loader = loadEpisodes();
+    else if (name === 'cast') loader = loadCredits();
+    else if (name === 'gallery') loader = loadImages();
+    else if (name === 'videos') loader = loadVideos();
+    else if (name === 'reviews') loader = loadReviews();
+
     loaded[name] = true;
-    if (name === 'episodes') loadEpisodes();
-    else if (name === 'cast') loadCredits();
-    else if (name === 'gallery') loadImages();
-    else if (name === 'videos') loadVideos();
-    else if (name === 'reviews') loadReviews();
+
+    if (loader && typeof loader.catch === 'function') {
+      loader.catch(function (err) {
+        loaded[name] = false;
+        handleAsyncLoadError(err);
+      });
+    }
   }
 }
 
@@ -299,7 +325,7 @@ async function loadVideos() {
       '<div class="video-title">' + v.name + '</div>' +
       '<div class="video-type">' + v.type + '</div>';
     card.onclick = function () {
-      window.open('https://www.youtube.com/watch?v=' + v.key, '_blank');
+      window.open('https://www.youtube.com/watch?v=' + v.key, '_blank', 'noopener,noreferrer');
     };
     listEl.appendChild(card);
   });
@@ -402,11 +428,22 @@ function openLightbox(src) {
 function closeLightbox() {
   document.getElementById('lightbox').classList.remove('open');
 }
-function updateConnectionBanner() {
+function goToOfflinePage() {
+  if (window.location.pathname.indexOf('offline.html') !== -1) return;
+  window.location.href = './offline.html';
+}
+function handleAsyncLoadError(err) {
+  console.error('[TMDB]', err && err.message ? err.message : err);
+  if (!navigator.onLine || (err && /Sin conexion/i.test(err.message))) {
+    goToOfflinePage();
+  }
+}
+function updateConnectionBanner(state) {
   var banner = document.getElementById('connection-banner');
   if (!banner) return;
+  if (state) connectionState = state;
 
-  if (navigator.onLine) {
+  if (connectionState === 'online') {
     if (!wasOffline) {
       banner.hidden = true;
       banner.className = 'connection-banner';
@@ -453,8 +490,14 @@ document.getElementById('nav-menu').onclick = function (e) {
   var btn = e.target.closest('.nav-btn');
   if (btn && btn.dataset.section) showSection(btn.dataset.section);
 };
-window.addEventListener('online', updateConnectionBanner);
-window.addEventListener('offline', updateConnectionBanner);
+window.addEventListener('online', function () { updateConnectionBanner('online'); });
+window.addEventListener('offline', function () {
+  updateConnectionBanner('offline');
+  setTimeout(goToOfflinePage, 120);
+});
+window.addEventListener('focus', function () {
+  updateConnectionBanner(navigator.onLine ? 'online' : 'offline');
+});
 
 /* ─── INIT ──────────────────────────────────────────────────────
    Punto de entrada. Carga los datos del Endpoint 1 y
@@ -467,9 +510,13 @@ loadSeriesDetails()
     setTimeout(function () {
       document.getElementById('app').classList.add('visible');
     }, 200);
-    updateConnectionBanner();
+    updateConnectionBanner('online');
   })
   .catch(function (err) {
+    if (!navigator.onLine || /Sin conexion/i.test(err.message)) {
+      goToOfflinePage();
+      return;
+    }
     document.getElementById('loader').innerHTML =
       '<div style="text-align:center;padding:40px;font-family:sans-serif;">' +
       '<div style="font-size:48px;margin-bottom:16px;">⚠️</div>' +

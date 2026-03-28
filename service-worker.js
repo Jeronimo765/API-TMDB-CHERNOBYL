@@ -1,7 +1,7 @@
 // Cache estatico con los archivos minimos para instalar y abrir el PWA.
-const STATIC_CACHE = 'chernobyl-static-v5';
+const STATIC_CACHE = 'chernobyl-static-v7';
 // Cache dinamico para recursos reutilizables que se cargan durante el uso.
-const RUNTIME_CACHE = 'chernobyl-runtime-v5';
+const RUNTIME_CACHE = 'chernobyl-runtime-v7';
 const APP_SHELL = [
   './',
   './index.html',
@@ -88,11 +88,10 @@ self.addEventListener('fetch', function (event) {
   }
 
   if (
-    url.hostname === 'image.tmdb.org' ||
     url.hostname === 'fonts.googleapis.com' ||
     url.hostname === 'fonts.gstatic.com'
   ) {
-    // Las fuentes e imagenes externas se reutilizan desde cache cuando ya existen.
+    // Las fuentes externas se reutilizan desde cache cuando ya existen.
     event.respondWith(
       caches.match(event.request).then(function (cachedResponse) {
         var networkFetch = fetch(event.request).then(function (networkResponse) {

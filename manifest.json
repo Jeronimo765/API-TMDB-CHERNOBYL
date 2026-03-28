@@ -2,10 +2,12 @@
   "name": "Chernobyl Explorer",
   "short_name": "Chernobyl",
   "description": "Explorador de la serie Chernobyl con datos, episodios, reparto, galeria, videos y resenas desde TMDB.",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait-primary",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "any",
   "background_color": "#000000",
   "theme_color": "#b8ff3a",
   "icons": [
@@ -26,6 +28,24 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "./screenshots/screenshot-mobile.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "label": "Vista movil de Chernobyl Explorer",
+      "platform": "android",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "./screenshots/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "label": "Vista panoramica de Chernobyl Explorer",
+      "platform": "windows",
+      "form_factor": "wide"
     }
   ],
   "lang": "es",

@@ -1,10 +1,19 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Chernobyl Explorer | Offline</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icons/icon-192.png" type="image/png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
   <meta name="theme-color" content="#b8ff3a" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Chernobyl" />
   <style>
     :root {
       color-scheme: dark;
@@ -23,9 +32,14 @@
     body {
       margin: 0;
       min-height: 100vh;
+      min-height: 100dvh;
       display: grid;
-      place-items: center;
-      padding: 24px;
+      align-items: center;
+      padding:
+        max(24px, env(safe-area-inset-top))
+        max(16px, env(safe-area-inset-right))
+        max(24px, env(safe-area-inset-bottom))
+        max(16px, env(safe-area-inset-left));
       font-family: "Segoe UI", sans-serif;
       background:
         radial-gradient(circle at top, rgba(184, 255, 58, 0.12), transparent 35%),
@@ -33,13 +47,105 @@
       color: var(--text);
     }
 
+    .offline-shell {
+      width: min(100%, 1120px);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 24px;
+      align-items: center;
+    }
+
     .offline-card {
-      width: min(100%, 520px);
+      width: min(100%, 560px);
       padding: 32px;
       border: 1px solid var(--border);
       border-radius: 24px;
       background: rgba(17, 17, 17, 0.88);
       box-shadow: 0 20px 80px rgba(0, 0, 0, 0.4);
+      justify-self: center;
+    }
+
+    .offline-visual {
+      display: none;
+      position: relative;
+      min-height: 360px;
+      border-radius: 32px;
+      overflow: hidden;
+      border: 1px solid rgba(184, 255, 58, 0.12);
+      background:
+        radial-gradient(circle at 20% 20%, rgba(184, 255, 58, 0.18), transparent 22%),
+        radial-gradient(circle at 76% 32%, rgba(184, 255, 58, 0.1), transparent 20%),
+        linear-gradient(160deg, rgba(17, 17, 17, 0.92), rgba(8, 8, 8, 0.98));
+      box-shadow: 0 30px 100px rgba(0, 0, 0, 0.42);
+    }
+
+    .offline-visual::before,
+    .offline-visual::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(184, 255, 58, 0.14);
+      opacity: 0.85;
+    }
+
+    .offline-visual::before {
+      width: 260px;
+      height: 260px;
+      top: -48px;
+      right: -32px;
+    }
+
+    .offline-visual::after {
+      width: 180px;
+      height: 180px;
+      bottom: -40px;
+      left: -20px;
+    }
+
+    .visual-panel {
+      position: absolute;
+      inset: auto 28px 28px 28px;
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(184, 255, 58, 0.1);
+      backdrop-filter: blur(8px);
+    }
+
+    .visual-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .visual-kicker::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 20px rgba(184, 255, 58, 0.55);
+    }
+
+    .visual-title {
+      margin: 0 0 10px;
+      font-size: clamp(28px, 3vw, 42px);
+      line-height: 1.04;
+    }
+
+    .visual-copy {
+      margin: 0;
+      max-width: 28ch;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
     }
 
     .badge {
@@ -69,22 +175,180 @@
     a {
       display: inline-block;
       margin-top: 10px;
+      min-height: 44px;
       padding: 12px 16px;
       border-radius: 12px;
       background: var(--accent);
       color: #080808;
       text-decoration: none;
       font-weight: 700;
+      touch-action: manipulation;
+    }
+
+    .status-note {
+      min-height: 22px;
+      margin-top: 14px;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .status-note.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (min-width: 900px) {
+      .offline-shell {
+        grid-template-columns: minmax(320px, 460px) minmax(360px, 1fr);
+      }
+
+      .offline-card {
+        width: 100%;
+        justify-self: stretch;
+      }
+
+      .offline-visual {
+        display: block;
+      }
+    }
+
+    @media (max-width: 700px) and (orientation: landscape) {
+      body {
+        align-items: start;
+      }
+
+      .offline-shell {
+        min-height: calc(100dvh - max(24px, env(safe-area-inset-top)) - max(24px, env(safe-area-inset-bottom)));
+        align-items: center;
+      }
+
+      .offline-card {
+        width: min(100%, 760px);
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        align-items: start;
+      }
+
+      .offline-shell {
+        min-height: calc(100dvh - max(24px, env(safe-area-inset-top)) - max(24px, env(safe-area-inset-bottom)));
+      }
+
+      .offline-card {
+        padding: 24px 20px;
+        border-radius: 20px;
+      }
+
+      .badge {
+        font-size: 11px;
+      }
+
+      h1 {
+        font-size: clamp(26px, 10vw, 38px);
+      }
+
+      p {
+        font-size: 15px;
+        line-height: 1.55;
+      }
+
+      a {
+        display: block;
+        width: 100%;
+        text-align: center;
+        padding: 14px 16px;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .offline-card {
+        padding: 22px 16px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      p {
+        font-size: 14px;
+      }
+    }
+
+    @media (min-width: 1440px) {
+      .offline-shell {
+        width: min(100%, 1240px);
+        gap: 40px;
+      }
+
+      .offline-card {
+        width: min(100%, 600px);
+        padding: 40px;
+      }
     }
   </style>
 </head>
+
 <body>
-  <main class="offline-card">
-    <div class="badge">Modo sin conexion</div>
-    <h1>No hay internet disponible</h1>
-    <p>La app sigue instalada, pero en este momento no puede consultar TMDB para cargar contenido nuevo.</p>
-    <p>Cuando vuelvas a tener conexion, recarga y el explorador continuara funcionando con normalidad.</p>
-    <a href="./">Intentar de nuevo</a>
-  </main>
+  <div class="offline-shell">
+    <main class="offline-card">
+      <div class="badge">Modo sin conexion</div>
+      <h1>No hay internet disponible</h1>
+      <p>La app sigue instalada, pero en este momento no puede consultar TMDB para cargar contenido nuevo.</p>
+      <p>Cuando vuelvas a tener conexion, recarga y el explorador continuara funcionando con normalidad.</p>
+      <a href="./">Intentar de nuevo</a>
+      <div id="status-note" class="status-note" aria-live="polite"></div>
+    </main>
+
+    <aside class="offline-visual" aria-hidden="true">
+      <div class="visual-panel">
+        <div class="visual-kicker">Chernobyl Explorer</div>
+        <h2 class="visual-title">Experiencia preparada para movil, tablet y pantallas grandes</h2>
+        <p class="visual-copy">La interfaz offline mantiene el acceso claro y centrado mientras vuelve la conexion, sin romper la instalacion PWA.</p>
+      </div>
+    </aside>
+  </div>
+  <script>
+    (function () {
+      var statusNote = document.getElementById('status-note');
+      var redirecting = false;
+
+      function showRecoveredMessage() {
+        if (!statusNote) return;
+        statusNote.textContent = 'Conexion recuperada, volviendo a la app...';
+        statusNote.classList.add('is-visible');
+      }
+
+      function goBackToApp() {
+        if (redirecting) return;
+        redirecting = true;
+        showRecoveredMessage();
+        setTimeout(function () {
+          window.location.replace('./');
+        }, 650);
+      }
+
+      function tryReturnSilently() {
+        window.location.replace('./');
+      }
+
+      function checkConnectionAndReturn() {
+        if (navigator.onLine) {
+          tryReturnSilently();
+        }
+      }
+
+      window.addEventListener('online', goBackToApp);
+      window.addEventListener('pageshow', checkConnectionAndReturn);
+      setTimeout(checkConnectionAndReturn, 150);
+    })();
+  </script>
 </body>
+
 </html>
