@@ -468,8 +468,7 @@ body::before {
 }
 
 .hero-tag {
-  display: inline-flex;
-  align-self: flex-start;
+  display: inline-block;
   padding: 4px 12px;
   border-radius: 40px;
   background: rgba(184, 255, 58, 0.15);
@@ -481,8 +480,9 @@ body::before {
   text-transform: uppercase;
   margin-bottom: 12px;
   width: auto;
-  max-width: 100%;
+  max-width: 320px;
   white-space: nowrap;
+  overflow: hidden;
 }
 
 .hero-title {
@@ -539,14 +539,16 @@ body::before {
   position: relative;
   width: 120px;
   height: 120px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
+  margin: 0 auto;
 }
 
 .score-ring svg {
+  position: relative;
+  z-index: 1;
   transform: rotate(-90deg);
   display: block;
+  margin: 0 auto;
 }
 
 .score-ring circle {
@@ -582,6 +584,10 @@ body::before {
   color: var(--text);
   line-height: 1;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  z-index: 2;
+  pointer-events: none;
+  margin: 0;
+  text-align: center;
 }
 
 .score-label {
